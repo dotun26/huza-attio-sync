@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "api/sync.js": { "maxDuration": 60 },
+    "api/deals.js": { "maxDuration": 30 }
+  },
+  "crons": [
+    {
+      "path": "/api/sync",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/deals",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "huza-attio-sync",
+  "version": "1.0.0",
+  "description": "Apollo → Attio engagement sync for Huza HR outbound campaigns",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
