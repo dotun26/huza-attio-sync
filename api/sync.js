@@ -1,5 +1,5 @@
 // api/sync.js — Daily Apollo → Attio engagement sync
-// Cron: 13:00 UTC (8 AM ET)
+// Cron: 06:00 UTC (8 AM Kigali / GMT+2)
 
 import {
     getAllPeople,

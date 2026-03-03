@@ -86,7 +86,7 @@ Expected response:
 
 ## What's Running
 
-**Daily at 8 AM ET:**
+**Daily at 8 AM Kigali:**
 - Fetches all 105 Attio people with Apollo IDs
 - Calls Apollo API for engagement metrics
 - Updates 9 fields on each person

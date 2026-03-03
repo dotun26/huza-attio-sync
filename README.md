@@ -41,7 +41,7 @@ Vercel auto-deploys on push. Check logs in dashboard.
 
 ## Cron Schedules
 
-### `/api/sync` — Daily at 8 AM ET (13:00 UTC)
+### `/api/sync` — Daily at 8 AM Kigali (06:00 UTC)
 
 Pulls engagement data from Apollo for all people in Attio, updates 9 fields:
 - Engagement Status
