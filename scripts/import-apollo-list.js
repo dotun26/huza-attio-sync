@@ -57,8 +57,9 @@ async function getApolloContacts(page = 1) {
 async function createAttioContact(apolloContact) {
     // Use new Apollo API response format (mixed_people/api_search)
     // Note: Attio's name is a single field, not split first/last
+    // Use last_name if available, otherwise use last_name_obfuscated
     const first = apolloContact.first_name || '';
-    const last = apolloContact.last_name || '';
+    const last = apolloContact.last_name || apolloContact.last_name_obfuscated || '';
     const name = `${first} ${last}`.trim() || "Unknown Contact";
     const PEOPLE_ID = "54328dbe-54e4-4b47-8f68-372d7f7d1da3";
     
@@ -116,11 +117,11 @@ async function main() {
         if (hasMore) await sleep(1000);
     }
     
-    // Filter to only include contacts with BOTH first and last names
+    // Filter to only include contacts with first name AND (last_name OR last_name_obfuscated)
     const validContacts = allContacts.filter(c => {
         const first = c.first_name || '';
-        const last = c.last_name || '';
-        return first.trim() && last.trim() && !last.includes('*'); // Skip obfuscated names
+        const last = c.last_name || c.last_name_obfuscated || '';
+        return first.trim() && last.trim(); // Must have both first and some form of last name
     });
     
     console.log(`\n✅ Fetched ${allContacts.length} total contacts`);
