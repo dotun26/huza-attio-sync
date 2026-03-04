@@ -8,7 +8,8 @@ import {
     calculateEngagementStatus,
     calculateEngagementScore,
     calculateDaysSinceContact,
-    calculateNextFollowup
+    calculateNextFollowup,
+    importApolloListToAttio
 } from '../lib/attio.js';
 
 export default async function syncHandler(req, res) {
@@ -34,8 +35,20 @@ export default async function syncHandler(req, res) {
         // Get all people from Attio
         console.log('[sync] Fetching people from Attio...');
         const people = await getAllPeople(100);
-        const withApollo = people.filter(p => p.values?.nddl_apollo_person_id);
+        let withApollo = people.filter(p => p.values?.nddl_apollo_person_id);
         console.log(`[sync] Found ${withApollo.length} people with Apollo IDs`);
+
+        // Auto-import Apollo list on first run (0 contacts)
+        if (withApollo.length === 0) {
+            console.log('[sync] No Apollo contacts found — importing from Apollo list...');
+            const importResult = await importApolloListToAttio('69a6f14a2d016c0011ddf7ed');
+            console.log(`[sync] Import result: ${importResult.imported} created`);
+            
+            // Re-fetch after import
+            const peopleAfterImport = await getAllPeople(100);
+            withApollo = peopleAfterImport.filter(p => p.values?.nddl_apollo_person_id);
+            console.log(`[sync] After import: ${withApollo.length} people with Apollo IDs`);
+        }
 
         // Process each person
         for (const person of withApollo) {
