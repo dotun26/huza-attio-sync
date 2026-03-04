@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/sync.js": { "maxDuration": 60 },
+    "api/sync.js": { "maxDuration": 300 },
     "api/deals.js": { "maxDuration": 30 }
   },
   "crons": [
