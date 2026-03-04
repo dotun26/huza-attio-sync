@@ -56,8 +56,10 @@ async function getApolloContacts(page = 1) {
 
 async function createAttioContact(apolloContact) {
     // Use new Apollo API response format (mixed_people/api_search)
-    const first_name = apolloContact.first_name || 'Unknown';
-    const last_name = apolloContact.last_name || '';
+    // Note: Attio's name is a single field, not split first/last
+    const first = apolloContact.first_name || '';
+    const last = apolloContact.last_name || '';
+    const name = `${first} ${last}`.trim() || "Unknown Contact";
     const PEOPLE_ID = "54328dbe-54e4-4b47-8f68-372d7f7d1da3";
     
     const res = await fetch(
@@ -71,8 +73,7 @@ async function createAttioContact(apolloContact) {
             body: JSON.stringify({
                 data: {
                     values: {
-                        first_name,
-                        last_name,
+                        name,
                         nddl_apollo_person_id: apolloContact.id,
                         nddl_apollo_headline: apolloContact.title,
                         nddl_apollo_location: apolloContact.city,
