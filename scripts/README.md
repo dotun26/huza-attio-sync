@@ -8,8 +8,14 @@ Import 105 Huza HR contacts from Apollo to Attio.
 ```bash
 APOLLO_API_KEY=KlGUfx8Gpr05VGCea0wEIA \
 ATTIO_API_KEY=$(cat ~/.config/attio/api_key) \
+APOLLO_LIST_ID=69a6f14a2d016c0011ddf7ed \
 node scripts/import-apollo-list.js
 ```
+
+**Required env vars:**
+- `APOLLO_API_KEY` — your Apollo API key
+- `ATTIO_API_KEY` — your Attio API key  
+- `APOLLO_LIST_ID` — Apollo list ID to import from (e.g., `69a6f14a2d016c0011ddf7ed` for "clawd generate")
 
 **What it does:**
 1. Fetches all contacts from Apollo list `69a6f14a2d016c0011ddf7ed` (clawd generate)

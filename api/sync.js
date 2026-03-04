@@ -40,9 +40,14 @@ export default async function syncHandler(req, res) {
 
         // Auto-import Apollo list on first run (0 contacts)
         if (withApollo.length === 0) {
-            console.log('[sync] No Apollo contacts found — importing from Apollo list...');
-            const importResult = await importApolloListToAttio('69a6f14a2d016c0011ddf7ed');
-            console.log(`[sync] Import result: ${importResult.imported} created`);
+            const listId = process.env.APOLLO_LIST_ID;
+            if (listId) {
+                console.log(`[sync] No Apollo contacts found — importing from Apollo list ${listId}...`);
+                const importResult = await importApolloListToAttio(listId);
+                console.log(`[sync] Import result: ${importResult.imported} created`);
+            } else {
+                console.log('[sync] No Apollo contacts and APOLLO_LIST_ID not set — skipping import');
+            }
             
             // Re-fetch after import
             const peopleAfterImport = await getAllPeople(100);

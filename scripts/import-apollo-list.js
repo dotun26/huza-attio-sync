@@ -8,7 +8,13 @@
 
 const APOLLO_KEY = process.env.APOLLO_API_KEY;
 const ATTIO_KEY = process.env.ATTIO_API_KEY;
-const LIST_ID = process.env.APOLLO_LIST_ID || "69a6f14a2d016c0011ddf7ed";
+const LIST_ID = process.env.APOLLO_LIST_ID;
+
+if (!LIST_ID) {
+    console.error('❌ Missing env var: APOLLO_LIST_ID');
+    console.error('   Example: 69a6f14a2d016c0011ddf7ed (clawd generate list)');
+    process.exit(1);
+}
 
 if (!APOLLO_KEY || !ATTIO_KEY) {
     console.error('❌ Missing env vars: APOLLO_API_KEY and ATTIO_API_KEY');
