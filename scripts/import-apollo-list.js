@@ -116,21 +116,30 @@ async function main() {
         if (hasMore) await sleep(1000);
     }
     
-    console.log(`\n✅ Fetched ${allContacts.length} contacts from Apollo\n`);
+    // Filter to only include contacts with BOTH first and last names
+    const validContacts = allContacts.filter(c => {
+        const first = c.first_name || '';
+        const last = c.last_name || '';
+        return first.trim() && last.trim() && !last.includes('*'); // Skip obfuscated names
+    });
+    
+    console.log(`\n✅ Fetched ${allContacts.length} total contacts`);
+    console.log(`✅ Valid contacts (first + last name): ${validContacts.length}\n`);
     
     // Import to Attio
     let created = 0;
     let failed = 0;
     
-    for (let i = 0; i < allContacts.length; i++) {
-        const contact = allContacts[i];
-        process.stdout.write(`\r[${i + 1}/${allContacts.length}] Importing ${contact.first_name || 'Contact'}...`);
+    for (let i = 0; i < validContacts.length; i++) {
+        const contact = validContacts[i];
+        const fullName = `${contact.first_name} ${contact.last_name}`;
+        process.stdout.write(`\r[${i + 1}/${validContacts.length}] Importing ${fullName}...`);
         
         try {
             await createAttioContact(contact);
             created++;
         } catch (e) {
-            console.log(`\n  ⚠️ ${contact.first_name}: ${e.message}`);
+            console.log(`\n  ⚠️ ${fullName}: ${e.message}`);
             failed++;
         }
         
@@ -139,8 +148,9 @@ async function main() {
     }
     
     console.log(`\n\n📊 Import Results:`);
-    console.log(`  ✅ Created: ${created}/${allContacts.length}`);
+    console.log(`  ✅ Created: ${created}/${validContacts.length}`);
     console.log(`  ❌ Failed: ${failed}`);
+    console.log(`  ⏭️  Skipped (missing names): ${allContacts.length - validContacts.length}`);
     console.log(`\n✨ Done!`);
 }
 
