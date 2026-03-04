@@ -21,23 +21,32 @@ if (!APOLLO_KEY || !ATTIO_KEY) {
     process.exit(1);
 }
 
-const APOLLO_BASE = "https://api.apollo.io/v1";
+const APOLLO_BASE = "https://api.apollo.io/v1"; // mixed_people/api_search endpoint
 const ATTIO_BASE = "https://api.attio.com/v2";
 
 async function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-async function getApolloContacts(offset = 0) {
+async function getApolloContacts(page = 1) {
+    // Use mixed_people/api_search (correct endpoint as of 2026-03-04)
+    // The /lists/{id}/contacts endpoint is deprecated/non-functional
     const res = await fetch(
-        `${APOLLO_BASE}/lists/${LIST_ID}/contacts`,
+        `${APOLLO_BASE}/mixed_people/api_search`,
         {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "X-Api-Key": APOLLO_KEY
             },
-            body: JSON.stringify({ limit: 500, offset })
+            body: JSON.stringify({
+                page,
+                per_page: 50,
+                q_organization_locations: ["Rwanda", "Kenya", "Nigeria", "Uganda", "Ghana", "Tanzania", "Zambia"],
+                q_organization_size: ["10-50", "51-200", "201-1000"],
+                q_organization_industry: ["logistics", "construction", "manufacturing"],
+                q_job_title: ["COO"]
+            })
         }
     );
     
@@ -46,8 +55,13 @@ async function getApolloContacts(offset = 0) {
 }
 
 async function createAttioContact(apolloContact) {
+    // Use new Apollo API response format (mixed_people/api_search)
+    const last_name = apolloContact.last_name || apolloContact.last_name_obfuscated || '';
+    const name = `${apolloContact.first_name || ''} ${last_name}`.trim() || "Unknown Contact";
+    const PEOPLE_ID = "54328dbe-54e4-4b47-8f68-372d7f7d1da3";
+    
     const res = await fetch(
-        `${ATTIO_BASE}/objects/people/records`,
+        `${ATTIO_BASE}/objects/${PEOPLE_ID}/records`,
         {
             method: "POST",
             headers: {
@@ -57,11 +71,11 @@ async function createAttioContact(apolloContact) {
             body: JSON.stringify({
                 data: {
                     values: {
-                        name: `${apolloContact.first_name || ''} ${apolloContact.last_name || ''}`.trim() || "Unknown Contact",
+                        name,
                         nddl_apollo_person_id: apolloContact.id,
-                        nddl_apollo_headline: apolloContact.headline,
+                        nddl_apollo_headline: apolloContact.title,
                         nddl_apollo_location: apolloContact.city,
-                        nddl_apollo_org_name: apolloContact.organization_name
+                        nddl_apollo_org_name: apolloContact.organization?.name
                     }
                 }
             })
@@ -77,24 +91,25 @@ async function createAttioContact(apolloContact) {
 }
 
 async function main() {
-    console.log("🚀 Importing Huza HR contacts from Apollo to Attio...\n");
+    console.log("🚀 Importing Huza HR COO contacts from Apollo to Attio...\n");
     
     let allContacts = [];
-    let offset = 0;
+    let page = 1;
     let hasMore = true;
     
-    // Fetch all contacts from Apollo list
-    while (hasMore) {
-        console.log(`Fetching batch (offset ${offset})...`);
-        const data = await getApolloContacts(offset);
-        const contacts = data.contacts || [];
+    // Fetch all contacts from Apollo search
+    while (hasMore && page <= 5) { // Limit to 5 pages (250 contacts max)
+        console.log(`Fetching page ${page}...`);
+        const data = await getApolloContacts(page);
+        const contacts = data.people || [];
         
         if (contacts.length === 0) break;
         allContacts.push(...contacts);
         console.log(`  Got ${contacts.length} contacts (total: ${allContacts.length})`);
         
-        hasMore = data.breadcrumbs?.has_more || false;
-        offset += 500;
+        // Check if there are more pages (Apollo returns total_entries but we'll stop at reasonable limit)
+        hasMore = contacts.length >= 50;
+        page += 1;
         
         if (hasMore) await sleep(1000);
     }
