@@ -1,0 +1,26 @@
+name: Attio Engagement Sync
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 6 AM UTC = 8 AM Kigali daily
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      APOLLO_API_KEY:     ${{ secrets.APOLLO_API_KEY }}
+      ATTIO_API_KEY:      ${{ secrets.ATTIO_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run sync
+        run: node sync.js
