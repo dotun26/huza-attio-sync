@@ -2,9 +2,7 @@
 // sync.js — Apollo sequence → Attio engagement sync (GitHub Actions runner)
 // No timeout constraints here. Run as: node sync.js
 
-'use strict';
-
-const https = require('https');
+import https from 'https';
 
 const APOLLO_KEY  = process.env.APOLLO_API_KEY;
 const ATTIO_KEY   = process.env.ATTIO_API_KEY;
