@@ -79,6 +79,26 @@ async function findAttioPerson(email) {
     return r.body?.data?.[0] || null;
 }
 
+// Create person in Attio from Apollo contact data
+async function createAttioPerson(contact) {
+    const nameParts = (contact.name || '').trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName  = nameParts.slice(1).join(' ') || '';
+
+    const r = await attio('POST', '/v2/objects/people/records', {
+        data: {
+            values: {
+                name: [{ first_name: firstName, last_name: lastName }],
+                email_addresses: [{ email_address: contact.email }],
+                job_title: contact.title ? [{ value: contact.title }] : undefined
+            }
+        }
+    });
+    if (r.status === 200 || r.status === 201) return r.body?.data || null;
+    console.log(`  ⚠️  Create failed (${r.status}): ${r.body?.message || ''}`);
+    return null;
+}
+
 // Update Attio person engagement
 async function updateAttioEngagement(recordId, values) {
     const r = await attio('PATCH', `/v2/objects/people/records/${recordId}`, { data: { values } });
@@ -123,8 +143,8 @@ async function main() {
     const contacts = await getSequenceContacts();
     console.log(`\n✅ ${contacts.length} contacts found\n`);
 
-    // 2. Match & update each
-    let synced = 0, notFound = 0, errors = 0;
+    // 2. Match, create if missing, then update
+    let synced = 0, created = 0, notFound = 0, errors = 0;
 
     for (const contact of contacts) {
         const email = contact.email;
@@ -133,18 +153,24 @@ async function main() {
         const name = contact.name || email;
 
         try {
-            const person = await findAttioPerson(email);
+            let person = await findAttioPerson(email);
             if (!person) {
-                console.log(`  👻 ${name} — not in Attio`);
-                notFound++;
-                await sleep(100);
-                continue;
+                person = await createAttioPerson(contact);
+                if (!person) {
+                    console.log(`  👻 ${name} — not in Attio, create failed`);
+                    notFound++;
+                    await sleep(100);
+                    continue;
+                }
+                console.log(`  ➕ ${name} — created in Attio`);
+                created++;
+                await sleep(200);
             }
 
             const values = deriveEngagement(contact);
             const ok = await updateAttioEngagement(person.id.record_id, values);
             if (ok) {
-                console.log(`  ✅ ${name} — ${values.engagement_status[0].value}`);
+                console.log(`  ✅ ${name} — ${values.engagement_status[0].status}`);
                 synced++;
             } else {
                 console.log(`  ❌ ${name} — Attio update failed`);
@@ -159,7 +185,7 @@ async function main() {
     }
 
     const duration = Math.round((Date.now() - start) / 1000);
-    const summary = `📊 Attio sync complete\n✅ ${synced} updated\n👻 ${notFound} not in Attio\n❌ ${errors} errors\n⏱ ${duration}s`;
+    const summary = `📊 Attio sync complete\n✅ ${synced} updated\n➕ ${created} created\n👻 ${notFound} skipped\n❌ ${errors} errors\n⏱ ${duration}s`;
     console.log(`\n${summary}`);
 
     if (TG_TOKEN && TG_CHAT) await telegram(summary);
