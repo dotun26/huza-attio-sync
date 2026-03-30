@@ -3,10 +3,5 @@
     "api/sync.js": { "maxDuration": 300 },
     "api/deals.js": { "maxDuration": 30 }
   },
-  "crons": [
-    {
-      "path": "/api/sync",
-      "schedule": "0 6 * * *"
-    }
-  ]
+  "crons": []
 }
