@@ -81,19 +81,19 @@ async function findAttioPerson(email) {
 
 // Create person in Attio from Apollo contact data
 async function createAttioPerson(contact) {
-    const nameParts = (contact.name || '').trim().split(' ');
-    const firstName = nameParts[0] || '';
+    const fullName  = (contact.name || '').trim();
+    const nameParts = fullName.split(' ');
+    const firstName = nameParts[0] || fullName;
     const lastName  = nameParts.slice(1).join(' ') || '';
 
-    const r = await attio('POST', '/v2/objects/people/records', {
-        data: {
-            values: {
-                name: [{ first_name: firstName, last_name: lastName }],
-                email_addresses: [{ email_address: contact.email }],
-                job_title: contact.title ? [{ value: contact.title }] : undefined
-            }
-        }
-    });
+    const values = {
+        // personal-name type requires first_name, last_name, AND full_name
+        name: [{ first_name: firstName, last_name: lastName, full_name: fullName }],
+        email_addresses: [{ email_address: contact.email }]
+    };
+    if (contact.title) values.job_title = [{ value: contact.title }];
+
+    const r = await attio('POST', '/v2/objects/people/records', { data: { values } });
     if (r.status === 200 || r.status === 201) return r.body?.data || null;
     console.log(`  ⚠️  Create failed (${r.status}): ${r.body?.message || ''}`);
     return null;
