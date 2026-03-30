@@ -46,7 +46,7 @@ Telegram summary notification
 
 - **Automatic:** Daily at 06:00 UTC (08:00 Kigali)
 - **Manual trigger:** GitHub Actions → "Attio Engagement Sync" → Run workflow
-- **Paused:** March 9 – April 4, 2026 (Relay.app credits exhausted — cron re-enabled April 4)
+- **Active:** Daily from March 30, 2026
 
 ## Trigger Manually
 
@@ -72,7 +72,7 @@ Created via API on 2026-03-30. Must match exactly:
 - **Email as join key** — Apollo contacts matched to Attio people by email address (reliable, no Apollo ID dependency)
 - **Create on miss** — if a contact doesn't exist in Attio, it's created automatically (handles new contacts added since Relay.app paused)
 - **GitHub Actions over Vercel** — 272 contacts × API calls × rate limit sleeps = ~5 min runtime; Vercel 10s timeout makes this impossible
-- **Relay.app removed from critical path** — previously depended on Relay for Apollo→Attio contact sync; now handled directly
+- **Direct API sync** — no third-party middleware; Apollo→Attio handled natively
 
 ## Apollo Sequence
 
