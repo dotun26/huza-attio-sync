@@ -92,20 +92,21 @@ function deriveEngagement(contact) {
     const addedAt   = status?.added_at;
     const finishedAt = status?.finished_at;
 
-    let engStatus = 'in_sequence';
+    // Must match exact titles created in Attio statuses
+    let engStatus = 'In Sequence';
     if (seq === 'finished') {
-        if (reason.includes('replied'))   engStatus = 'replied';
-        else if (reason.includes('bounce')) engStatus = 'bounced';
-        else                               engStatus = 'completed';
-    } else if (seq === 'paused') engStatus = 'paused';
-    else if (seq === 'not_sent') engStatus = 'not_sent';
+        if (reason.includes('replied'))     engStatus = 'Replied';
+        else if (reason.includes('bounce')) engStatus = 'Bounced';
+        else                                engStatus = 'Completed';
+    } else if (seq === 'paused')   engStatus = 'Paused';
+    else if (seq === 'not_sent')   engStatus = 'Not Sent';
 
     const daysSince = addedAt
         ? Math.floor((Date.now() - new Date(addedAt)) / 86400000)
         : null;
 
     const values = {
-        engagement_status: [{ value: engStatus }]
+        engagement_status: [{ status: engStatus }]
     };
     if (daysSince !== null) values.days_since_contact = [{ value: daysSince }];
     if (finishedAt || addedAt) values.last_engaged = [{ value: finishedAt || addedAt }];
