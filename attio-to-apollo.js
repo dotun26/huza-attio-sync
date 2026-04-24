@@ -55,6 +55,33 @@ const telegram = text =>
   request('api.telegram.org', 'POST', `/bot${TG_TOKEN}/sendMessage`,
     { chat_id: TG_CHAT, text, parse_mode: 'HTML' }, {}).catch(() => {});
 
+// Pre-load all existing Apollo accounts with "Huza Customer" label into a domain→id map
+async function loadExistingApolloAccounts() {
+  console.log('🔍 Loading existing Apollo "Huza Customer" accounts...');
+  const domainMap = {};  // domain → account id
+  const nameMap   = {};  // lowercase name → account id
+  let page = 1;
+
+  while (true) {
+    const r = await apollo('POST', '/api/v1/accounts/search', {
+      label_names: [APOLLO_LABEL],
+      per_page: 100,
+      page
+    });
+    if (r.status !== 200) break;
+    const accounts = r.body.accounts || [];
+    for (const a of accounts) {
+      if (a.domain) domainMap[a.domain.toLowerCase()] = a.id;
+      if (a.name)   nameMap[a.name.toLowerCase()]     = a.id;
+    }
+    if (accounts.length < 100) break;
+    page++;
+  }
+
+  console.log(`✅ Found ${Object.keys(domainMap).length} existing accounts by domain, ${Object.keys(nameMap).length} by name`);
+  return { domainMap, nameMap };
+}
+
 // Pull all companies where Customer Status = "Customer" (paginated)
 async function getAttioCustomers() {
   console.log('📋 Fetching Attio companies with Customer Status = Customer...');
@@ -97,23 +124,17 @@ function extractCompanyData(record) {
   return { name, domain, website, city, country };
 }
 
-// Upsert company in Apollo as an account with "Huza Customer" label
-async function upsertApolloAccount(company) {
+// Upsert company in Apollo — uses pre-loaded map to prevent duplicates
+async function upsertApolloAccount(company, domainMap, nameMap) {
   if (!company.name && !company.domain) {
     return { status: 'skipped', reason: 'no name or domain' };
   }
 
-  // Search for existing account by domain
-  let existingId = null;
-  if (company.domain) {
-    const search = await apollo('POST', '/api/v1/accounts/search', {
-      q_organization_domains: [company.domain],
-      per_page: 1
-    });
-    if (search.status === 200 && search.body.accounts?.length > 0) {
-      existingId = search.body.accounts[0].id;
-    }
-  }
+  // Match by domain first, then by name — no per-company API search needed
+  const existingId =
+    (company.domain && domainMap[company.domain.toLowerCase()]) ||
+    (company.name   && nameMap[company.name.toLowerCase()])     ||
+    null;
 
   const payload = {
     name: company.name || undefined,
@@ -135,8 +156,11 @@ async function upsertApolloAccount(company) {
     const r = await apollo('POST', '/api/v1/accounts', payload);
     const id = r.body.account?.id;
     if (id) {
-      // label_names doesn't apply on POST — do a follow-up PUT
+      // label_names doesn't apply on POST — follow-up PUT to apply label
       await apollo('PUT', `/api/v1/accounts/${id}`, { label_names: [APOLLO_LABEL] });
+      // Add to local map so subsequent entries in same run don't duplicate
+      if (company.domain) domainMap[company.domain.toLowerCase()] = id;
+      if (company.name)   nameMap[company.name.toLowerCase()]     = id;
     }
     return {
       status: (r.status === 200 || r.status === 201) ? 'created' : 'error',
@@ -159,9 +183,12 @@ async function main() {
 
   console.log(`\n📤 Upserting ${companies.length} companies into Apollo as "${APOLLO_LABEL}"...\n`);
 
-  // Step 2: Upsert each into Apollo
+  // Step 2: Pre-load existing Apollo accounts to avoid duplicates
+  const { domainMap, nameMap } = await loadExistingApolloAccounts();
+
+  // Step 3: Upsert each into Apollo
   for (const company of companies) {
-    const result = await upsertApolloAccount(company);
+    const result = await upsertApolloAccount(company, domainMap, nameMap);
     const icon = result.status === 'created' ? '✨' : result.status === 'updated' ? '🔄' : result.status === 'skipped' ? '⏭️' : '❌';
     console.log(`  ${icon} ${company.name || company.domain} → ${result.status}${result.error ? ` (${result.error})` : ''}`);
 
