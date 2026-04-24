@@ -2,7 +2,7 @@ name: Attio → Apollo Customer Sync
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # Daily 6 AM UTC (8 AM Kigali)
+    - cron: '0 6 1,15 * *'  # Every 2 weeks (1st & 15th) at 6 AM UTC (8 AM Kigali)
   workflow_dispatch:        # Manual trigger
 
 jobs:
